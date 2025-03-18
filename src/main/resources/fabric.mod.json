@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "infinite-saved-hotbars",
+	"version": "${version}",
+	"name": "Infinite Saved Hotbars",
+	"description": "Adds an infinite amount of extra rows inside the saved hotbars tab",
+	"authors": [
+		{
+			"name": "IdealMatrix",
+			"contact": {
+				"homepage": "https://kevin-stefan.de"
+			}
+		}
+	],
+	"contact": {
+		"homepage": "https://modrinth.com/project/infinite-saved-hotbars",
+		"sources": "https://github.com/TheIdealMatrix/infinite-saved-hotbars",
+		"issues": "https://github.com/TheIdealMatrix/infinite-saved-hotbars/issues"
+	},
+	"license": "MIT",
+	"icon": "assets/infinite-saved-hotbars/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"de.kevin_stefan.infinitesavedhotbars.InfiniteSavedHotbars"
+		]
+	},
+	"mixins": [
+		"infinite-saved-hotbars.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.10",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"accessWidener": "infinite-saved-hotbars.accesswidener"
+}
