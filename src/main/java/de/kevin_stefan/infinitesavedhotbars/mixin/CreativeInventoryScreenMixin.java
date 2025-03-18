@@ -3,7 +3,7 @@ package de.kevin_stefan.infinitesavedhotbars.mixin;
 import de.kevin_stefan.infinitesavedhotbars.CreativeHotbars;
 import de.kevin_stefan.infinitesavedhotbars.InfiniteSavedHotbars;
 import net.fabricmc.fabric.api.client.itemgroup.v1.FabricCreativeInventoryScreen;
-import net.minecraft.client.gui.screen.ingame.AbstractInventoryScreen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen.CreativeScreenHandler;
 import net.minecraft.entity.player.PlayerInventory;
@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(CreativeInventoryScreen.class)
-public abstract class CreativeInventoryScreenMixin extends AbstractInventoryScreen<CreativeScreenHandler> implements FabricCreativeInventoryScreen {
+public abstract class CreativeInventoryScreenMixin extends HandledScreen<CreativeScreenHandler> implements FabricCreativeInventoryScreen {
 
     @Shadow
     private static ItemGroup selectedTab;
