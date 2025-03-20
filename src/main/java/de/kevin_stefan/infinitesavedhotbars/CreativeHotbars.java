@@ -34,10 +34,7 @@ public class CreativeHotbars {
             handler.itemList.add(Items.GRAY_STAINED_GLASS_PANE.getDefaultStack());
         }
 
-        // If internal rows not loaded, load from file
-        if (rows.isEmpty()) {
-            loadFromFile();
-        }
+        loadFromFile();
 
         // Add all rows from internal list to container
         for (ItemStack[] row : rows) {
@@ -167,7 +164,7 @@ public class CreativeHotbars {
             }
 
             NbtIo.write(nbtCompound, FILE);
-        } catch (IOException | NullPointerException e) {
+        } catch (IOException | NullPointerException | IllegalStateException e) {
             InfiniteSavedHotbars.LOGGER.error("Failed to save extended creative slots", e);
         }
     }
@@ -179,6 +176,7 @@ public class CreativeHotbars {
                 return;
             }
 
+            rows.clear();
             var registryOps = MinecraftClient.getInstance().world.getRegistryManager().getOps(NbtOps.INSTANCE);
             int i = 0;
             while (nbtCompound.contains(String.valueOf(i))) {
