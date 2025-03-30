@@ -1,9 +1,12 @@
 package de.kevin_stefan.infinitesavedhotbars.mixin;
 
+import de.kevin_stefan.infinitesavedhotbars.Config;
 import de.kevin_stefan.infinitesavedhotbars.CreativeHotbars;
 import de.kevin_stefan.infinitesavedhotbars.InfiniteSavedHotbars;
+import de.kevin_stefan.infinitesavedhotbars.CustomCheckboxWidget;
 import net.fabricmc.fabric.api.client.itemgroup.v1.FabricCreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.AbstractInventoryScreen;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen.CreativeScreenHandler;
 import net.minecraft.entity.player.PlayerInventory;
@@ -27,6 +30,9 @@ public abstract class CreativeInventoryScreenMixin extends AbstractInventoryScre
 
     @Shadow
     private float scrollPosition;
+
+    @Unique
+    private CustomCheckboxWidget checkbox;
 
     public CreativeInventoryScreenMixin(CreativeScreenHandler screenHandler, PlayerInventory playerInventory, Text text) {
         super(screenHandler, playerInventory, text);
@@ -59,6 +65,32 @@ public abstract class CreativeInventoryScreenMixin extends AbstractInventoryScre
         }
     }
 
+    @Inject(method = "setSelectedTab", at = @At("RETURN"))
+    private void handleAutoScroll(ItemGroup group, CallbackInfo info) {
+        if (checkbox == null) {
+            checkbox = createCheckBox();
+            this.addDrawableChild(checkbox);
+        }
+
+        if (group.getType() != ItemGroup.Type.HOTBAR) {
+            checkbox.visible = false;
+            return;
+        }
+        checkbox.visible = true;
+
+        if (Config.getInstance().getAutoScroll()) {
+            this.scrollPosition = handler.getScrollPosition(10);
+            handler.scrollItems(scrollPosition);
+        }
+    }
+
+    @Inject(method = "resize", at = @At("RETURN"))
+    private void resize(MinecraftClient client, int width, int height, CallbackInfo ci) {
+        this.remove(checkbox);
+        checkbox = createCheckBox();
+        this.addDrawableChild(checkbox);
+    }
+
     /**
      * @return index of the slot in the handler.itemList
      */
@@ -71,6 +103,17 @@ public abstract class CreativeInventoryScreenMixin extends AbstractInventoryScre
             InfiniteSavedHotbars.LOGGER.error("Failed to get slot index", e);
             return -1;
         }
+    }
+
+    @Unique
+    private CustomCheckboxWidget createCheckBox() {
+        int x = this.x + this.backgroundWidth - 15;
+        int y = this.y + 5;
+        int i = 9;
+        boolean checked = Config.getInstance().getAutoScroll();
+        return new CustomCheckboxWidget(x, y, i, i, checked, (widget, isChecked) -> {
+            Config.getInstance().setAutoScroll(isChecked);
+        });
     }
 
 }
