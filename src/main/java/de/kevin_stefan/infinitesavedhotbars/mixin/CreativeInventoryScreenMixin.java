@@ -107,9 +107,12 @@ public abstract class CreativeInventoryScreenMixin extends AbstractInventoryScre
 
     @Unique
     private CustomCheckboxWidget createCheckBox() {
-        int x = this.x + this.backgroundWidth - 15;
+        int x = this.x + 180;
         int y = this.y + 5;
-        int i = 9;
+        int i = 10;
+        if (this.getPageCount() > 1) {
+            x -= i + 11;
+        }
         boolean checked = Config.getInstance().getAutoScroll();
         return new CustomCheckboxWidget(x, y, i, i, checked, (widget, isChecked) -> {
             Config.getInstance().setAutoScroll(isChecked);
