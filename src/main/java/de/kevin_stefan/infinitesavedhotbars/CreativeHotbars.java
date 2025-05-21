@@ -4,10 +4,12 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.datafixer.DataFixTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
@@ -148,7 +150,7 @@ public class CreativeHotbars {
         removeEmptyRows();
         try {
             var registryOps = MinecraftClient.getInstance().world.getRegistryManager().getOps(NbtOps.INSTANCE);
-            NbtCompound nbtCompound = new NbtCompound();
+            NbtCompound nbtCompound = NbtHelper.putDataVersion(new NbtCompound());
             for (int i = 0; i < rows.size(); i++) {
                 ItemStack[] row = rows.get(i);
                 NbtList nbtRow = new NbtList();
@@ -175,6 +177,9 @@ public class CreativeHotbars {
             if (nbtCompound == null) {
                 return;
             }
+
+            int dataVersion = NbtHelper.getDataVersion(nbtCompound, 3955); // 1.21.1
+            nbtCompound = DataFixTypes.HOTBAR.update(MinecraftClient.getInstance().getDataFixer(), nbtCompound, dataVersion);
 
             rows.clear();
             var registryOps = MinecraftClient.getInstance().world.getRegistryManager().getOps(NbtOps.INSTANCE);
