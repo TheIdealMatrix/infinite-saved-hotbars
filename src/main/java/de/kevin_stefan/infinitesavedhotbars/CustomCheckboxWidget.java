@@ -1,10 +1,10 @@
 package de.kevin_stefan.infinitesavedhotbars;
 
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.CheckboxWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
@@ -23,7 +23,7 @@ public class CustomCheckboxWidget extends ClickableWidget {
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         Identifier identifier = this.checked ? CheckboxWidget.SELECTED_TEXTURE : CheckboxWidget.TEXTURE;
-        context.drawGuiTexture(RenderLayer::getGuiTextured, identifier, this.getX(), this.getY(), this.getWidth(), this.getHeight(), ColorHelper.getWhite(this.alpha));
+        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, identifier, this.getX(), this.getY(), this.getWidth(), this.getHeight(), ColorHelper.getWhite(this.alpha));
     }
 
     @Override
