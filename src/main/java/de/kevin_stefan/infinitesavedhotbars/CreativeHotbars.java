@@ -62,7 +62,7 @@ public class CreativeHotbars {
         }
 
         if (actionType == SlotActionType.PICKUP) {
-            boolean controlPressed = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), InputUtil.GLFW_KEY_LEFT_CONTROL);
+            boolean controlPressed = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), InputUtil.GLFW_KEY_LEFT_CONTROL);
             ItemStack cursorStack = handler.getCursorStack();
             ItemStack itemInSlot = handler.itemList.get(slot);
 
