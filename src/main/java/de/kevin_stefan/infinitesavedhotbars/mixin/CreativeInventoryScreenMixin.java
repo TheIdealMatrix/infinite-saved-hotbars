@@ -9,6 +9,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen.CreativeScreenHandler;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.screen.slot.Slot;
@@ -114,9 +115,11 @@ public abstract class CreativeInventoryScreenMixin extends HandledScreen<Creativ
             x -= i + 11;
         }
         boolean checked = Config.getInstance().getAutoScroll();
-        return new CustomCheckboxWidget(x, y, i, i, checked, (widget, isChecked) -> {
+        CustomCheckboxWidget checkbox = new CustomCheckboxWidget(x, y, i, i, checked, (widget, isChecked) -> {
             Config.getInstance().setAutoScroll(isChecked);
         });
+        checkbox.setTooltip(Tooltip.of(Text.translatable("inventory.hotbarCheckbox")));
+        return checkbox;
     }
 
 }
