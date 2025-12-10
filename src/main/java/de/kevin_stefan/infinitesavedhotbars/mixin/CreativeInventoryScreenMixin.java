@@ -2,10 +2,9 @@ package de.kevin_stefan.infinitesavedhotbars.mixin;
 
 import de.kevin_stefan.infinitesavedhotbars.Config;
 import de.kevin_stefan.infinitesavedhotbars.CreativeHotbars;
-import de.kevin_stefan.infinitesavedhotbars.InfiniteSavedHotbars;
 import de.kevin_stefan.infinitesavedhotbars.CustomCheckboxWidget;
+import de.kevin_stefan.infinitesavedhotbars.InfiniteSavedHotbars;
 import net.fabricmc.fabric.api.client.itemgroup.v1.FabricCreativeInventoryScreen;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen.CreativeScreenHandler;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -86,7 +85,7 @@ public abstract class CreativeInventoryScreenMixin extends HandledScreen<Creativ
     }
 
     @Inject(method = "resize", at = @At("RETURN"))
-    private void resize(MinecraftClient client, int width, int height, CallbackInfo ci) {
+    private void resize(int width, int height, CallbackInfo ci) {
         this.remove(checkbox);
         checkbox = createCheckBox();
         this.addDrawableChild(checkbox);
