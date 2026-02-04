@@ -1,6 +1,7 @@
 package de.kevin_stefan.infinitesavedhotbars;
 
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.SharedConstants;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.util.InputUtil;
@@ -179,7 +180,27 @@ public class CreativeHotbars {
             }
 
             int dataVersion = NbtHelper.getDataVersion(nbtCompound, 3955); // 1.21.1
-            nbtCompound = DataFixTypes.HOTBAR.update(MinecraftClient.getInstance().getDataFixer(), nbtCompound, dataVersion);
+            int newDataVersion = SharedConstants.getGameVersion().dataVersion().id();
+            if (dataVersion != newDataVersion) {
+                if (nbtCompound.getSize() - 1 > 9) { // if there are more than 9 rows
+                    int iterations = Math.ceilDivExact(nbtCompound.getSize() - 1, 9);
+                    for (int i = 0; i < iterations; i++) { // iterate over 9 rows at a time
+                        NbtCompound newNbtCompound = new NbtCompound();
+                        for (int j = 0; j < 9; j++) {
+                            int index = i * 9 + j;
+                            if (!nbtCompound.contains(String.valueOf(index))) {
+                                break;
+                            }
+                            newNbtCompound.put(String.valueOf(index), nbtCompound.get(String.valueOf(index)));
+                            nbtCompound.remove(String.valueOf(index));
+                        }
+                        newNbtCompound = DataFixTypes.HOTBAR.update(MinecraftClient.getInstance().getDataFixer(), newNbtCompound, dataVersion);
+                        nbtCompound.copyFrom(newNbtCompound);
+                    }
+                } else {
+                    nbtCompound = DataFixTypes.HOTBAR.update(MinecraftClient.getInstance().getDataFixer(), nbtCompound, dataVersion);
+                }
+            }
 
             rows.clear();
             var registryOps = MinecraftClient.getInstance().world.getRegistryManager().getOps(NbtOps.INSTANCE);
