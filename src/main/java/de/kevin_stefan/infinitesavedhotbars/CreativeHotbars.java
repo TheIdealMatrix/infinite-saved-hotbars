@@ -2,19 +2,19 @@ package de.kevin_stefan.infinitesavedhotbars;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.datafixer.DataFixTypes;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtHelper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.Tag;
+import net.minecraft.util.datafix.DataFixTypes;
+import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,17 +31,17 @@ public class CreativeHotbars {
     private CreativeHotbars() {
     }
 
-    public static void init(CreativeInventoryScreen.CreativeScreenHandler handler) {
+    public static void init(CreativeModeInventoryScreen.ItemPickerMenu handler) {
         // Add a separation line
         for (int i = 0; i < 9; i++) {
-            handler.itemList.add(Items.GRAY_STAINED_GLASS_PANE.getDefaultStack());
+            handler.items.add(Items.GRAY_STAINED_GLASS_PANE.getDefaultInstance());
         }
 
         loadFromFile();
 
         // Add all rows from internal list to container
         for (ItemStack[] row : rows) {
-            handler.itemList.addAll(List.of(row));
+            handler.items.addAll(List.of(row));
         }
 
         // Add empty row at the bottom
@@ -51,7 +51,7 @@ public class CreativeHotbars {
     /**
      * @return true if the callback should be canceled, otherwise false
      */
-    public static boolean onSlotClick(CreativeInventoryScreen.CreativeScreenHandler handler, int slot, SlotActionType actionType) {
+    public static boolean onSlotClick(CreativeModeInventoryScreen.ItemPickerMenu handler, int slot, ContainerInput actionType) {
         // Ignore vanilla rows
         if (slot < VANILLA_ROWS * 9) {
             return false;
@@ -62,10 +62,10 @@ public class CreativeHotbars {
             return true;
         }
 
-        if (actionType == SlotActionType.PICKUP) {
-            boolean controlPressed = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), InputUtil.GLFW_KEY_LEFT_CONTROL);
-            ItemStack cursorStack = handler.getCursorStack();
-            ItemStack itemInSlot = handler.itemList.get(slot);
+        if (actionType == ContainerInput.PICKUP) {
+            boolean controlPressed = InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), InputConstants.KEY_LCONTROL);
+            ItemStack cursorStack = handler.getCarried();
+            ItemStack itemInSlot = handler.items.get(slot);
 
             // Execute vanilla behavior when override key isn't pressed and no item in cursor
             if (!controlPressed && cursorStack.isEmpty()) {
@@ -77,7 +77,7 @@ public class CreativeHotbars {
             }
 
             // Set item from cursor in the container slot
-            handler.itemList.set(slot, cursorStack);
+            handler.items.set(slot, cursorStack);
 
             // Add an empty row at the bottom if there is now an item in the last row
             addEmptyRow(handler);
@@ -90,11 +90,11 @@ public class CreativeHotbars {
             try {
                 saveToFile();
                 // Empty the cursor after everything went successful
-                handler.setCursorStack(ItemStack.EMPTY);
+                handler.setCarried(ItemStack.EMPTY);
             } catch (IllegalStateException e) {
                 InfiniteSavedHotbars.LOGGER.error("Failed to encode item", e);
                 // Revert the slot change on exception
-                handler.itemList.set(slot, itemInSlot);
+                handler.items.set(slot, itemInSlot);
             }
         }
 
@@ -119,13 +119,13 @@ public class CreativeHotbars {
     /**
      * Adds an empty row at the bottom of the container if last row isn't empty
      */
-    private static void addEmptyRow(CreativeInventoryScreen.CreativeScreenHandler handler) {
-        int size = handler.itemList.size();
+    private static void addEmptyRow(CreativeModeInventoryScreen.ItemPickerMenu handler) {
+        int size = handler.items.size();
         for (int i = size - 1; i >= size - 9; i--) { // For each item in the last row
-            ItemStack item = handler.itemList.get(i);
+            ItemStack item = handler.items.get(i);
             if (!item.isEmpty()) { // Add empty row if an item was found
                 for (int j = 0; j < 9; j++) {
-                    handler.itemList.add(ItemStack.EMPTY);
+                    handler.items.add(ItemStack.EMPTY);
                 }
                 break;
             }
@@ -150,16 +150,15 @@ public class CreativeHotbars {
     private static void saveToFile() throws IllegalStateException {
         removeEmptyRows();
         try {
-            var registryOps = MinecraftClient.getInstance().world.getRegistryManager().getOps(NbtOps.INSTANCE);
-            NbtCompound nbtCompound = NbtHelper.putDataVersion(new NbtCompound());
+            CompoundTag nbtCompound = NbtUtils.addCurrentDataVersion(new CompoundTag());
             for (int i = 0; i < rows.size(); i++) {
                 ItemStack[] row = rows.get(i);
-                NbtList nbtRow = new NbtList();
+                ListTag nbtRow = new ListTag();
                 for (ItemStack itemStack : row) {
                     if (itemStack.isEmpty()) {
-                        nbtRow.add(new NbtCompound());
+                        nbtRow.add(new CompoundTag());
                     } else {
-                        NbtElement nbtElement = ItemStack.CODEC.encodeStart(registryOps, itemStack).getOrThrow(); // throws IllegalStateException
+                        Tag nbtElement = ItemStack.CODEC.encodeStart(NbtOps.INSTANCE, itemStack).getOrThrow(); // throws IllegalStateException
                         nbtRow.add(nbtElement);
                     }
                 }
@@ -174,18 +173,18 @@ public class CreativeHotbars {
 
     private static void loadFromFile() {
         try {
-            NbtCompound nbtCompound = NbtIo.read(FILE);
+            CompoundTag nbtCompound = NbtIo.read(FILE);
             if (nbtCompound == null) {
                 return;
             }
 
-            int dataVersion = NbtHelper.getDataVersion(nbtCompound, 3955); // 1.21.1
-            int newDataVersion = SharedConstants.getGameVersion().dataVersion().id();
+            int dataVersion = NbtUtils.getDataVersion(nbtCompound, 3955); // 1.21.1
+            int newDataVersion = SharedConstants.getCurrentVersion().dataVersion().version();
             if (dataVersion != newDataVersion) {
-                if (nbtCompound.getSize() - 1 > 9) { // if there are more than 9 rows
-                    int iterations = Math.ceilDivExact(nbtCompound.getSize() - 1, 9);
+                if (nbtCompound.size() - 1 > 9) { // if there are more than 9 rows
+                    int iterations = Math.ceilDivExact(nbtCompound.size() - 1, 9);
                     for (int i = 0; i < iterations; i++) { // iterate over 9 rows at a time
-                        NbtCompound newNbtCompound = new NbtCompound();
+                        CompoundTag newNbtCompound = new CompoundTag();
                         for (int j = 0; j < 9; j++) {
                             int index = i * 9 + j;
                             if (!nbtCompound.contains(String.valueOf(index))) {
@@ -194,22 +193,21 @@ public class CreativeHotbars {
                             newNbtCompound.put(String.valueOf(index), nbtCompound.get(String.valueOf(index)));
                             nbtCompound.remove(String.valueOf(index));
                         }
-                        newNbtCompound = DataFixTypes.HOTBAR.update(MinecraftClient.getInstance().getDataFixer(), newNbtCompound, dataVersion);
-                        nbtCompound.copyFrom(newNbtCompound);
+                        newNbtCompound = DataFixTypes.HOTBAR.update(Minecraft.getInstance().getFixerUpper(), newNbtCompound, dataVersion, newDataVersion);
+                        nbtCompound.merge(newNbtCompound);
                     }
                 } else {
-                    nbtCompound = DataFixTypes.HOTBAR.update(MinecraftClient.getInstance().getDataFixer(), nbtCompound, dataVersion);
+                    nbtCompound = DataFixTypes.HOTBAR.update(Minecraft.getInstance().getFixerUpper(), nbtCompound, dataVersion, newDataVersion);
                 }
             }
 
             rows.clear();
-            var registryOps = MinecraftClient.getInstance().world.getRegistryManager().getOps(NbtOps.INSTANCE);
             int i = 0;
             while (nbtCompound.contains(String.valueOf(i))) {
-                NbtList nbtRow = (NbtList) nbtCompound.get(String.valueOf(i));
+                ListTag nbtRow = (ListTag) nbtCompound.get(String.valueOf(i));
                 ItemStack[] row = new ItemStack[9];
                 for (int j = 0; j < nbtRow.size(); j++) {
-                    row[j] = ItemStack.CODEC.parse(registryOps, nbtRow.get(j)).resultOrPartial().orElse(ItemStack.EMPTY);
+                    row[j] = ItemStack.CODEC.parse(NbtOps.INSTANCE, nbtRow.get(j)).resultOrPartial().orElse(ItemStack.EMPTY);
                 }
                 rows.add(row);
                 i++;

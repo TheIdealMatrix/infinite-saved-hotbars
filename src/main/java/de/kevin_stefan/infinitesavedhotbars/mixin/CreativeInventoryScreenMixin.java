@@ -4,16 +4,16 @@ import de.kevin_stefan.infinitesavedhotbars.Config;
 import de.kevin_stefan.infinitesavedhotbars.CreativeHotbars;
 import de.kevin_stefan.infinitesavedhotbars.CustomCheckboxWidget;
 import de.kevin_stefan.infinitesavedhotbars.InfiniteSavedHotbars;
-import net.fabricmc.fabric.api.client.itemgroup.v1.FabricCreativeInventoryScreen;
-import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
-import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen.CreativeScreenHandler;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.text.Text;
+import net.fabricmc.fabric.api.client.creativetab.v1.FabricCreativeModeInventoryScreen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen.ItemPickerMenu;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -22,73 +22,73 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(CreativeInventoryScreen.class)
-public abstract class CreativeInventoryScreenMixin extends HandledScreen<CreativeScreenHandler> implements FabricCreativeInventoryScreen {
+@Mixin(CreativeModeInventoryScreen.class)
+public abstract class CreativeInventoryScreenMixin extends AbstractContainerScreen<ItemPickerMenu> implements FabricCreativeModeInventoryScreen {
 
     @Shadow
-    private static ItemGroup selectedTab;
+    private static CreativeModeTab selectedTab;
 
     @Shadow
-    private float scrollPosition;
+    private float scrollOffs;
 
     @Unique
     private CustomCheckboxWidget checkbox;
 
-    public CreativeInventoryScreenMixin(CreativeScreenHandler screenHandler, PlayerInventory playerInventory, Text text) {
-        super(screenHandler, playerInventory, text);
+    public CreativeInventoryScreenMixin(ItemPickerMenu screenHandler, Inventory inventory, Component text) {
+        super(screenHandler, inventory, text);
     }
 
     @Shadow
-    protected abstract boolean isCreativeInventorySlot(@Nullable Slot slot);
+    protected abstract boolean isCreativeSlot(@Nullable Slot slot);
 
-    @Inject(method = "setSelectedTab", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemGroup;getType()Lnet/minecraft/item/ItemGroup$Type;", shift = At.Shift.BEFORE, ordinal = 2))
-    private void setSelectedTab(ItemGroup group, CallbackInfo info) {
-        if (group.getType() != ItemGroup.Type.HOTBAR) {
+    @Inject(method = "selectTab", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/CreativeModeTab;getType()Lnet/minecraft/world/item/CreativeModeTab$Type;", shift = At.Shift.BEFORE, ordinal = 2))
+    private void setSelectedTab(CreativeModeTab group, CallbackInfo info) {
+        if (group.getType() != CreativeModeTab.Type.HOTBAR) {
             return;
         }
 
-        CreativeHotbars.init(handler);
+        CreativeHotbars.init(menu);
     }
 
-    @Inject(method = "onMouseClick", at = @At("HEAD"), cancellable = true)
-    private void onMouseClick(Slot slot, int slotId, int button, SlotActionType actionType, CallbackInfo info) {
-        if (selectedTab.getType() != ItemGroup.Type.HOTBAR || !isCreativeInventorySlot(slot)) {
+    @Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
+    private void slotClicked(Slot slot, int slotId, int button, ContainerInput actionType, CallbackInfo info) {
+        if (selectedTab.getType() != CreativeModeTab.Type.HOTBAR || !isCreativeSlot(slot)) {
             return;
         }
 
         int slotIndex = getSlotIndex(slotId);
-        if (CreativeHotbars.onSlotClick(handler, slotIndex, actionType)) {
+        if (CreativeHotbars.onSlotClick(menu, slotIndex, actionType)) {
             // Update the view
-            handler.scrollItems(scrollPosition);
+            menu.scrollTo(scrollOffs);
 
             info.cancel();
         }
     }
 
-    @Inject(method = "setSelectedTab", at = @At("RETURN"))
-    private void handleAutoScroll(ItemGroup group, CallbackInfo info) {
+    @Inject(method = "selectTab", at = @At("RETURN"))
+    private void handleAutoScroll(CreativeModeTab group, CallbackInfo info) {
         if (checkbox == null) {
             checkbox = createCheckBox();
-            this.addDrawableChild(checkbox);
+            this.addRenderableWidget(checkbox);
         }
 
-        if (group.getType() != ItemGroup.Type.HOTBAR) {
+        if (group.getType() != CreativeModeTab.Type.HOTBAR) {
             checkbox.visible = false;
             return;
         }
         checkbox.visible = true;
 
         if (Config.getInstance().getAutoScroll()) {
-            this.scrollPosition = handler.getScrollPosition(10);
-            handler.scrollItems(scrollPosition);
+            this.scrollOffs = menu.getScrollForRowIndex(10);
+            menu.scrollTo(scrollOffs);
         }
     }
 
     @Inject(method = "resize", at = @At("RETURN"))
     private void resize(int width, int height, CallbackInfo ci) {
-        this.remove(checkbox);
+        this.removeWidget(checkbox);
         checkbox = createCheckBox();
-        this.addDrawableChild(checkbox);
+        this.addRenderableWidget(checkbox);
     }
 
     /**
@@ -97,7 +97,7 @@ public abstract class CreativeInventoryScreenMixin extends HandledScreen<Creativ
     @Unique
     private int getSlotIndex(int slotId) {
         try {
-            int row = handler.getRow(scrollPosition);
+            int row = menu.getRowIndexForScroll(scrollOffs);
             return row * 9 + slotId;
         } catch (Exception e) {
             InfiniteSavedHotbars.LOGGER.error("Failed to get slot index", e);
@@ -107,8 +107,8 @@ public abstract class CreativeInventoryScreenMixin extends HandledScreen<Creativ
 
     @Unique
     private CustomCheckboxWidget createCheckBox() {
-        int x = this.x + 180;
-        int y = this.y + 5;
+        int x = this.leftPos + 180;
+        int y = this.topPos + 5;
         int i = 10;
         if (this.getPageCount() > 1) {
             x -= i + 11;
@@ -117,7 +117,7 @@ public abstract class CreativeInventoryScreenMixin extends HandledScreen<Creativ
         CustomCheckboxWidget checkbox = new CustomCheckboxWidget(x, y, i, i, checked, (widget, isChecked) -> {
             Config.getInstance().setAutoScroll(isChecked);
         });
-        checkbox.setTooltip(Tooltip.of(Text.translatable("inventory.hotbarCheckbox")));
+        checkbox.setTooltip(Tooltip.create(Component.translatable("inventory.hotbarCheckbox")));
         return checkbox;
     }
 

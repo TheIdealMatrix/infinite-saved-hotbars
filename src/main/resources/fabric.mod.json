@@ -29,9 +29,9 @@
 		"infinite-saved-hotbars.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.18.2",
-		"minecraft": ">=1.21.11 <=1.21.11",
-		"java": ">=21",
+		"fabricloader": ">=0.18.4",
+		"minecraft": ">=26.1 <=26.1",
+		"java": ">=25",
 		"fabric-api": "*"
 	},
 	"accessWidener": "infinite-saved-hotbars.accesswidener"
