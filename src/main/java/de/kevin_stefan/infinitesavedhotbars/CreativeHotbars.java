@@ -1,16 +1,17 @@
 package de.kevin_stefan.infinitesavedhotbars;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
-import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.ItemStack;
@@ -150,6 +151,7 @@ public class CreativeHotbars {
     private static void saveToFile() throws IllegalStateException {
         removeEmptyRows();
         try {
+            var registryOps = RegistryOps.create(NbtOps.INSTANCE, Minecraft.getInstance().level.registryAccess());
             CompoundTag nbtCompound = NbtUtils.addCurrentDataVersion(new CompoundTag());
             for (int i = 0; i < rows.size(); i++) {
                 ItemStack[] row = rows.get(i);
@@ -158,7 +160,7 @@ public class CreativeHotbars {
                     if (itemStack.isEmpty()) {
                         nbtRow.add(new CompoundTag());
                     } else {
-                        Tag nbtElement = ItemStack.CODEC.encodeStart(NbtOps.INSTANCE, itemStack).getOrThrow(); // throws IllegalStateException
+                        Tag nbtElement = ItemStack.CODEC.encodeStart(registryOps, itemStack).getOrThrow(); // throws IllegalStateException
                         nbtRow.add(nbtElement);
                     }
                 }
@@ -202,12 +204,13 @@ public class CreativeHotbars {
             }
 
             rows.clear();
+            var registryOps = RegistryOps.create(NbtOps.INSTANCE, Minecraft.getInstance().level.registryAccess());
             int i = 0;
             while (nbtCompound.contains(String.valueOf(i))) {
                 ListTag nbtRow = (ListTag) nbtCompound.get(String.valueOf(i));
                 ItemStack[] row = new ItemStack[9];
                 for (int j = 0; j < nbtRow.size(); j++) {
-                    row[j] = ItemStack.CODEC.parse(NbtOps.INSTANCE, nbtRow.get(j)).resultOrPartial().orElse(ItemStack.EMPTY);
+                    row[j] = ItemStack.CODEC.parse(registryOps, nbtRow.get(j)).resultOrPartial().orElse(ItemStack.EMPTY);
                 }
                 rows.add(row);
                 i++;
