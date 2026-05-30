@@ -35,7 +35,7 @@ public class CreativeHotbars {
     public static void init(CreativeModeInventoryScreen.ItemPickerMenu handler) {
         // Add a separation line
         for (int i = 0; i < 9; i++) {
-            handler.items.add(Items.GRAY_STAINED_GLASS_PANE.getDefaultInstance());
+            handler.items.add(Items.STAINED_GLASS_PANE.gray().getDefaultInstance());
         }
 
         loadFromFile();
