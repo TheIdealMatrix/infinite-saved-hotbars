@@ -64,7 +64,7 @@ public class CreativeHotbars {
         }
 
         if (actionType == ContainerInput.PICKUP) {
-            boolean controlPressed = InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), InputConstants.KEY_LCONTROL);
+            boolean controlPressed = InputConstants.isKeyDown(InputConstants.KEY_LCONTROL);
             ItemStack cursorStack = handler.getCarried();
             ItemStack itemInSlot = handler.items.get(slot);
 
