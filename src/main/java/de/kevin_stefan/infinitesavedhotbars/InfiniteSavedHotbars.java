@@ -1,7 +1,7 @@
 package de.kevin_stefan.infinitesavedhotbars;
 
 import net.fabricmc.api.ClientModInitializer;
-
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLevelEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +21,8 @@ public class InfiniteSavedHotbars implements ClientModInitializer {
         // Proceed with mild caution.
 
         LOGGER.info("Hello from Infinite Saved Hotbars!");
+
+        ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register(CreativeHotbars::init);
     }
 
 }
