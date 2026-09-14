@@ -5,6 +5,8 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
@@ -21,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class CreativeHotbars {
 
@@ -32,13 +35,15 @@ public class CreativeHotbars {
     private CreativeHotbars() {
     }
 
-    public static void init(CreativeModeInventoryScreen.ItemPickerMenu handler) {
+    public static void init(Minecraft client, ClientLevel level) {
+        loadFromFile(client, level.registryAccess());
+    }
+
+    public static void onTabOpen(CreativeModeInventoryScreen.ItemPickerMenu handler) {
         // Add a separation line
         for (int i = 0; i < 9; i++) {
             handler.items.add(Items.STAINED_GLASS_PANE.gray().getDefaultInstance());
         }
-
-        loadFromFile();
 
         // Add all rows from internal list to container
         for (ItemStack[] row : rows) {
@@ -89,7 +94,8 @@ public class CreativeHotbars {
             setItem(row, index, cursorStack);
 
             try {
-                saveToFile();
+                assert Minecraft.getInstance().level != null;
+                saveToFile(Minecraft.getInstance().level.registryAccess());
                 // Empty the cursor after everything went successful
                 handler.setCarried(ItemStack.EMPTY);
             } catch (IllegalStateException e) {
@@ -148,10 +154,10 @@ public class CreativeHotbars {
         }
     }
 
-    private static void saveToFile() throws IllegalStateException {
+    private static void saveToFile(RegistryAccess registryAccess) throws IllegalStateException {
         removeEmptyRows();
         try {
-            var registryOps = RegistryOps.create(NbtOps.INSTANCE, Minecraft.getInstance().level.registryAccess());
+            var registryOps = RegistryOps.create(NbtOps.INSTANCE, registryAccess);
             CompoundTag nbtCompound = NbtUtils.addCurrentDataVersion(new CompoundTag());
             for (int i = 0; i < rows.size(); i++) {
                 ItemStack[] row = rows.get(i);
@@ -173,7 +179,7 @@ public class CreativeHotbars {
         }
     }
 
-    private static void loadFromFile() {
+    private static void loadFromFile(Minecraft client, RegistryAccess registryAccess) {
         try {
             CompoundTag nbtCompound = NbtIo.read(FILE);
             if (nbtCompound == null) {
@@ -192,22 +198,22 @@ public class CreativeHotbars {
                             if (!nbtCompound.contains(String.valueOf(index))) {
                                 break;
                             }
-                            newNbtCompound.put(String.valueOf(index), nbtCompound.get(String.valueOf(index)));
+                            newNbtCompound.put(String.valueOf(index), Objects.requireNonNull(nbtCompound.get(String.valueOf(index))));
                             nbtCompound.remove(String.valueOf(index));
                         }
-                        newNbtCompound = DataFixTypes.HOTBAR.update(Minecraft.getInstance().getFixerUpper(), newNbtCompound, dataVersion, newDataVersion);
+                        newNbtCompound = DataFixTypes.HOTBAR.update(client.getFixerUpper(), newNbtCompound, dataVersion, newDataVersion);
                         nbtCompound.merge(newNbtCompound);
                     }
                 } else {
-                    nbtCompound = DataFixTypes.HOTBAR.update(Minecraft.getInstance().getFixerUpper(), nbtCompound, dataVersion, newDataVersion);
+                    nbtCompound = DataFixTypes.HOTBAR.update(client.getFixerUpper(), nbtCompound, dataVersion, newDataVersion);
                 }
             }
 
             rows.clear();
-            var registryOps = RegistryOps.create(NbtOps.INSTANCE, Minecraft.getInstance().level.registryAccess());
+            var registryOps = RegistryOps.create(NbtOps.INSTANCE, registryAccess);
             int i = 0;
             while (nbtCompound.contains(String.valueOf(i))) {
-                ListTag nbtRow = (ListTag) nbtCompound.get(String.valueOf(i));
+                ListTag nbtRow = (ListTag) Objects.requireNonNull(nbtCompound.get(String.valueOf(i)));
                 ItemStack[] row = new ItemStack[9];
                 for (int j = 0; j < nbtRow.size(); j++) {
                     row[j] = ItemStack.CODEC.parse(registryOps, nbtRow.get(j)).resultOrPartial().orElse(ItemStack.EMPTY);

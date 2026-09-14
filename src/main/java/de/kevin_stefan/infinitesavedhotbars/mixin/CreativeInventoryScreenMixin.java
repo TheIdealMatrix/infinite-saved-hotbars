@@ -47,7 +47,7 @@ public abstract class CreativeInventoryScreenMixin extends AbstractContainerScre
             return;
         }
 
-        CreativeHotbars.init(menu);
+        CreativeHotbars.onTabOpen(menu);
     }
 
     @Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
