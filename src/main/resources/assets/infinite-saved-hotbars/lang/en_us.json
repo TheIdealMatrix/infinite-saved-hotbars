@@ -1,3 +1,4 @@
 {
-  "inventory.hotbarCheckbox": "Auto-scrolls to the Infinite Saved Hotbar section on inventory open"
+  "inventory.hotbarCheckbox": "Auto-scrolls to the Infinite Saved Hotbar section on inventory open",
+  "inventory.hotbarSaveError": "There was an Error saving the Infinite Saved Hotbars. The Item \"%s\" in row %s could not be saved."
 }
