@@ -2,6 +2,7 @@ package de.kevin_stefan.infinitesavedhotbars;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
@@ -14,7 +15,6 @@ import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.inventory.ContainerInput;
@@ -182,7 +182,7 @@ public class CreativeHotbars {
                 Component itemName = currentItem.getHoverName();
                 int row = i + 1;
                 Minecraft.getInstance().schedule(() -> {
-                    Component message = Component.translatable("inventory.hotbarSaveError", itemName, row).withColor(TextColor.DARK_RED);
+                    Component message = Component.translatable("inventory.hotbarSaveError", itemName, row).withColor(ChatFormatting.DARK_RED.getColor());
                     assert Minecraft.getInstance().player != null;
                     Minecraft.getInstance().player.sendSystemMessage(message);
                 });
