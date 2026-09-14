@@ -13,6 +13,8 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.inventory.ContainerInput;
@@ -24,6 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 public class CreativeHotbars {
 
@@ -92,17 +95,10 @@ public class CreativeHotbars {
             int row = slot / 9 - (VANILLA_ROWS + 1);
             int index = slot % 9;
             setItem(row, index, cursorStack);
+            handler.setCarried(ItemStack.EMPTY);
 
-            try {
-                assert Minecraft.getInstance().level != null;
-                saveToFile(Minecraft.getInstance().level.registryAccess());
-                // Empty the cursor after everything went successful
-                handler.setCarried(ItemStack.EMPTY);
-            } catch (IllegalStateException e) {
-                InfiniteSavedHotbars.LOGGER.error("Failed to encode item", e);
-                // Revert the slot change on exception
-                handler.items.set(slot, itemInSlot);
-            }
+            assert Minecraft.getInstance().level != null;
+            saveToFile(Minecraft.getInstance().level.registryAccess());
         }
 
         return true;
@@ -154,29 +150,44 @@ public class CreativeHotbars {
         }
     }
 
-    private static void saveToFile(RegistryAccess registryAccess) throws IllegalStateException {
+    private static void saveToFile(RegistryAccess registryAccess) {
         removeEmptyRows();
-        try {
-            var registryOps = RegistryOps.create(NbtOps.INSTANCE, registryAccess);
-            CompoundTag nbtCompound = NbtUtils.addCurrentDataVersion(new CompoundTag());
-            for (int i = 0; i < rows.size(); i++) {
-                ItemStack[] row = rows.get(i);
-                ListTag nbtRow = new ListTag();
-                for (ItemStack itemStack : row) {
-                    if (itemStack.isEmpty()) {
-                        nbtRow.add(new CompoundTag());
-                    } else {
-                        Tag nbtElement = ItemStack.CODEC.encodeStart(registryOps, itemStack).getOrThrow(); // throws IllegalStateException
-                        nbtRow.add(nbtElement);
-                    }
-                }
-                nbtCompound.put(String.valueOf(i), nbtRow);
-            }
 
-            NbtIo.write(nbtCompound, FILE);
-        } catch (IOException | NullPointerException | IllegalStateException e) {
-            InfiniteSavedHotbars.LOGGER.error("Failed to save extended creative slots", e);
-        }
+        CompletableFuture.runAsync(() -> {
+            int i = 0;
+            ItemStack currentItem = ItemStack.EMPTY;
+            try {
+                var registryOps = RegistryOps.create(NbtOps.INSTANCE, registryAccess);
+                CompoundTag nbtCompound = NbtUtils.addCurrentDataVersion(new CompoundTag());
+                for (; i < rows.size(); i++) {
+                    ItemStack[] row = rows.get(i);
+                    ListTag nbtRow = new ListTag();
+                    for (ItemStack itemStack : row) {
+                        currentItem = itemStack;
+                        if (itemStack.isEmpty()) {
+                            nbtRow.add(new CompoundTag());
+                        } else {
+                            Tag nbtElement = ItemStack.CODEC.encodeStart(registryOps, itemStack).getOrThrow(); // throws IllegalStateException
+                            nbtRow.add(nbtElement);
+                        }
+                    }
+                    nbtCompound.put(String.valueOf(i), nbtRow);
+                }
+
+                NbtIo.write(nbtCompound, FILE);
+            } catch (IOException e) {
+                InfiniteSavedHotbars.LOGGER.error("Failed to save extended creative slots", e);
+            } catch (IllegalStateException e) {
+                InfiniteSavedHotbars.LOGGER.error("Failed to encode item", e);
+                Component itemName = currentItem.getHoverName();
+                int row = i + 1;
+                Minecraft.getInstance().schedule(() -> {
+                    Component message = Component.translatable("inventory.hotbarSaveError", itemName, row).withColor(TextColor.DARK_RED);
+                    assert Minecraft.getInstance().player != null;
+                    Minecraft.getInstance().player.sendSystemMessage(message);
+                });
+            }
+        });
     }
 
     private static void loadFromFile(Minecraft client, RegistryAccess registryAccess) {

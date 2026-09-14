@@ -1,3 +1,4 @@
 {
-  "inventory.hotbarCheckbox": "Scrollt beim Öffnen des Inventars automatisch zu den unendlichen hotbars"
+  "inventory.hotbarCheckbox": "Scrollt beim Öffnen des Inventars automatisch zu den unendlichen hotbars",
+  "inventory.hotbarSaveError": "Beim speichern der Infinite Saved Hotbars ist ein Fehler aufgetreten. Das Item \"%s\" in Reihe %s konnte nicht gespeichert werden."
 }
