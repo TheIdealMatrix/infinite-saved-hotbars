@@ -99,9 +99,10 @@ public class CreativeHotbars {
 
             assert Minecraft.getInstance().level != null;
             saveToFile(Minecraft.getInstance().level.registryAccess());
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     /**
